@@ -1,6 +1,7 @@
 # transfer-stream-parser
 
 To run the parser:
+
         1) Clone the repository.
 
         2) Navigate to the root directory in the terminal.
