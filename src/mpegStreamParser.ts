@@ -27,6 +27,7 @@ export function parse(fileStream: Readable): Promise<Array<string>> {
                 }
             })
             .on('end', () => {
+                packetIDs.sort((a, b) => parseInt(a, 16) - parseInt(b, 16));
                 resolve(packetIDs);
             })
             .on('error', (error) => {
@@ -41,10 +42,6 @@ function packetIDExtractor(packet: Buffer): string {
 }
 
 function packetValidator(packet: Buffer, index: number): void {
-    // I need to add an exception for the first package, that is allowed to be less than 188 bytes
-
-
-    // If the packet doesn't have the correct length, or if the sync byte is not present, I throw an error
     if (packet.length !== PACKET_SIZE_IN_BYTES || packet[0] !== SYNC_BYTE) {
         throw new Error(`Error: No sync byte present in packet ${index}, offset ${index * 188}`);
     }
