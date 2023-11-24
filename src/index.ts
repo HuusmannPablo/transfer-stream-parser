@@ -59,101 +59,41 @@
         // $ echo $?
         // 0
 
-// I would need to create a parser class or function, that can recieve an input file as the one mentioned before
-// And I need to return a message for success or error
-
-// I need to create the tests for the fail or success results
-
-// Here's a step-by-step plan:
-
-// Import the necessary modules.
-// Create a function to parse the PID from the packet.
-// Create a function to validate the packet.
-// Create a ReadStream from the input file.
-// Listen for 'data' events on the stream.
-// On each 'data' event, slice the data into 188-byte packets.
-// Validate each packet and extract the PID.
-// Keep track of the unique PIDs in a Set.
-// If a packet is invalid, print an error message and exit with a failure code.
-// If the stream ends without any errors, print the unique PIDs and exit with a success code.
-
-
 
 // The fs is a module that allows me to read and write files and directories
 // The stream module allows me to handle streaming data, and transform is a class that allows me to take input, process it and produce output
-import * as fs from 'fs';
-import { Transform } from 'stream';
-import { Readable } from 'stream';
+import { createReadStream } from 'fs';
+import { parse } from './mpegStreamParser';
+import { Readable } from "stream";
+
 
 // Creating a dummy stream to check if the code works
 // Create a buffer of 188 bytes
 const dummyPacket = Buffer.alloc(188);
 // Set the sync byte
 dummyPacket[0] = 0x47;
-// Set the PID to 0x1fff (null packet)
+// Set the PID to 0x1fff
 dummyPacket[1] = 0x1F;
 dummyPacket[2] = 0xFF;
 // The rest of the packet can be any data
 for (let i = 3; i < 188; i++) {
     dummyPacket[i] = Math.floor(Math.random() * 256);
 }
-const twoDummyPackets = Buffer.concat([dummyPacket, dummyPacket]);
+const twoDummyPackets = Buffer.concat([dummyPacket, dummyPacket, dummyPacket, dummyPacket, dummyPacket, dummyPacket, dummyPacket]);
 const dummyStream = Readable.from(twoDummyPackets);
 
-// Function to parse the PID from the packet
-export function parsePID(packet: Buffer): string {
-    // The PID is stored in the last 5 bits of the second byte, and all 8 bits of the third byte of a packet
-    // The first part takes the last 5 bits of the second byte (packet[1]) and then shifts it 8 bits to the left to make room for the third byte
-    // The second part after the OR operator takes the third byte (packet[2])
-    // The result is a 13-bit PID that is converted to a string in hexadecimal format
-    const pid = ((packet[1] & 0x1f) << 8) | packet[2];
-    return pid.toString(16);
-}
+// LO tengo que recibir de la command line
+const fileStream = createReadStream('./test-files/test_failure.ts');
+// const fileStream = createReadStream('./test-files/test_success.ts');
 
-// Function to validate the packet
-export function validatePacket(packet: Buffer, index: number): void {
-    // I need to add an exception for the first package, that is allowed to be less than 188 bytes
-
-    // If the packet doesn't have the correct length, or if the sync byte is not present, I throw an error
-    if (packet.length !== 188 || packet[0] !== 0x47) {
-        handleError(`Error: No sync byte present in packet ${index}, offset ${index * 188}`);
-    }
-}
-
-// Function to handle errors, needed to be able to run the tests without ending the process
-export function handleError(message: string): void {
-    console.error(message);
-    process.exit(1);
-}
-
-// I create the stream to read from the file 
-// const fileStream = fs.createReadStream('./test-files/test_failure.ts');
-// const fileStream = fs.createReadStream('./test-files/test_success.ts');
-
-// I create the stream to transform the data into packets
-export const packetStream = new Transform({
-    transform(chunk: Buffer, encoding: string, callback: Function) {
-        // I slice the data into 188-byte packets
-        for (let i = 0; i < chunk.length; i += 188) {
-            this.push(chunk.slice(i, i + 188));
-        }
-        callback();
-    }
-});
-
-// Keep track of the unique PIDs in a Set
-const uniquePIDs = new Set<string>();
-
-// I pipe the file stream into the packetStream. I read the file and send it to be transformed into packets
-// fileStream.pipe(packetStream)
-dummyStream.pipe(packetStream)
-    // Every time I get a packet, I validate it and extract the PID 
-    .on('data', (packet: Buffer) => {
-        validatePacket(packet, uniquePIDs.size);
-        uniquePIDs.add(parsePID(packet));
-    })
-    // When the stream ends, I print the unique PIDs and exit with a success code
-    .on('end', () => {
-        console.log(Array.from(uniquePIDs).sort());
+(async () => {
+    try {
+        // const PIDs = await parse(dummyStream);
+        const PIDs = await parse(fileStream);
+        PIDs.forEach(pid => console.log(pid));
         process.exit(0);
-    });
+    } catch (error) {
+        console.log(error);
+        process.exit(1)
+    }
+})();
