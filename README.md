@@ -6,8 +6,8 @@ Please implement a parser that:
 
         - Reads a byte stream from standard input
         - Parses the byte stream to ensure it conforms to the criteria above:
-        - The byte stream will contain a series of 188 byte packets, and each packet begins with the sync byte (possibly excepting the first packet)
-        - Parse and report the Packet ID (PID) of each packet
+                - The byte stream will contain a series of 188 byte packets, and each packet begins with the sync byte (possibly excepting the first packet)
+                - Parse and report the Packet ID (PID) of each packet
         - Will successfully parse a valid stream that has a partial first packet (less than 188 bytes). If the first packet is not complete, it should be discarded.
         - Exits with a success code (0) if the byte stream conforms to the criteria, and a failure code (1) if it does not.
 
